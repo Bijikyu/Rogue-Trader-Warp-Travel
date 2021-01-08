@@ -1,5 +1,4 @@
 // Constants
-
 const warpTravelEncounters = [
     'Reality Erosion', 
     'Plague of Madness', 
@@ -15,67 +14,45 @@ const warpTravelEncounters = [
 ];
 
 // Variables/State
-
-let random;
-
-let dur0 = 1;
-let dur1, dur2, dur3;
-let dur4 = 'Several Years';
-
 let aware, awareDegrees, navSkill, charted, difficulty;
-
+let duration, estDuration, subjectiveDuration, timeDilation, realDuration;
 let astroStatus;
 let onCourse;
-
-let duration;
-let estDuration;
-let subjectiveDuration;
-let timeDilation;
-let realDuration;
-
+let steerSuccess;
 let ourEncounters = [];
-
 let leaveDegrees;
 
+// Cached Element Referances
+const start = document.getElementById('start');
+const submit = document.getElementById('submit');
 
-// Cached Event Listeners
+// Event Listeners
+start.addEventListener('click', init);
+submit.addEventListener('click', handleSubmit);
 
-/* A listener is needed to list to a table of options 
-with the options being as per table 7-2 on Core pg 184 (handle duration) */
-
-/* A listener for the difficulty of passage per block on Core pg 185 (handle difficulty)*/
-
-/* a listener for reset */
+/* TODO: A listener for the difficulty of passage per block on Core pg 185 (handle difficulty)*/
 
 // Render
 function render(){
+    console.log('--------------------------------------------------------------------------')
     astroStatus ? console.log('The Astronomican has been located') : console.log('The Astronomican cannot be found');
-    console.log(duration + estDuration + realDuration + charted + onCourse);
-    console.log(ourEncounters);
-    console.log(leaveDegrees);
+    charted ? console.log('The Navigator was able to plot a course') : console.log('The Navigator was unable to plot a course');
+    console.log(`The appropriate estimate for the travel duration would be ${duration} days`);
+    console.log(`The Navigator estimates the journey will take ${estDuration} days`);
+    console.log(`Our warp encounters include: ${ourEncounters}`);
+    console.log(`The Navigator has completed the journey in ${subjectiveDuration} subjective days and  ${realDuration} objective Realspace days, which is ${realDuration/30} months, or ${realDuration/365} years.`);
+    console.log(`Exit translation accuracy is ${Math.floor(leaveDegrees/10)} degrees`);
+    onCourse ? console.log('The ship arrives at its intended destination') : console.log('The ship has not arrived at the intended destination and is lost in space');
+    console.log('--------------------------------------------------------------------------')
 };
 
 // Functions
-
-function findAstro(){
-    let pass;
-    let awarenessRoll = Math.floor(Math.random()*99)+1;
-    awarenessRoll <= aware ? pass = true : pass = false;
-    awareDegrees = aware - awarenessRoll;
-    return awareDegrees;
-};
-
 function navEst(){
     let navEstimate;
     let navRoll = Math.floor(Math.random()*99)+1;
     navRoll <= navSkill + awareDegrees ? navEstimate = true : navEstimate = false;
-    navEstimate ? estDuration = duration : estDuration = duration*(Math.floor((Math.random()*2)*((navSkill+awareDegrees)-navRoll))+0.5);
+    navEstimate ? estDuration = Math.floor(duration) : estDuration = Math.floor(duration*((Math.random()*2)+0.25));
     return estDuration;
-};
-
-function timeDilate(){
-    timeDilation = Math.floor(Math.Random()*24);
-    return timeDilation;
 };
 
 function chartCourse(){
@@ -99,70 +76,80 @@ function steerVessel(){
     let dice1 = Math.floor(Math.random()*9)+1;
     let dice2 = Math.floor(Math.random()*9)+1;
     steerRoll <= navSkill+awareDegrees+difficulty ? pass = true : pass = false;
+    console.log('The steerRoll was ' + steerRoll);
     (dice1 === 9 || dice2 === 9) && pass === false ? onCourse = false : onCourse = true;
     if ((navSkill+awareDegrees+difficulty)-steerRoll >= 30){
         steerSuccess = 0.25;
     }
-    else if ((navSkill+awareDegrees+difficulty)-steerRoll >= 20){
+    else if ((navSkill+awareDegrees/*difficulty*/)-steerRoll >= 20){
         steerSuccess = 0.5;
     }
-    else if ((navSkill+awareDegrees+difficulty)-steerRoll >= 10){
+    else if ((navSkill+awareDegrees/*difficulty*/)-steerRoll >= 10){
         steerSuccess = 0.75;
     }
-    else if ((navSkill+awareDegrees+difficulty)-steerRoll >= 0){
+    else if ((navSkill+awareDegrees/*difficulty*/)-steerRoll >= 0){
         steerSuccess = 1;
     }
-    else if ((navSkill+awareDegrees+difficulty)-steerRoll >= -1){
+    else if ((navSkill+awareDegrees/*difficulty*/)-steerRoll >= -1){
         steerSuccess = 2;
     }
-    else if ((navSkill+awareDegrees+difficulty)-steerRoll >= -10){
+    else if ((navSkill+awareDegrees/*difficulty*/)-steerRoll >= -10){
         steerSuccess = 3;
     }
-    else if ((navSkill+awareDegrees+difficulty)-steerRoll <= -20){
+    else if ((navSkill+awareDegrees/*difficulty*/)-steerRoll <= -20){
         steerSuccess = 4;
     }
-    subjectiveDuration = duration*steerSuccess;
-    realDuration = subjectiveDuration*timeDilation;
+    else {
+        console.log('navSkill is ' + navSkill);
+        console.log('awareDegrees is ' + awareDegrees);
+        console.log('steerRoll is ' + steerRoll);
+        console.log('total is ' + navSkill+awareDegrees-steerRoll);
+    }
+    subjectiveDuration = duration * steerSuccess;
+    return subjectiveDuration;
 };
 
 function warpEncounters(){
-    let encounterNum = Math.floor(subjectiveDuration/5);
-    if (encounterNum === 0){encounterNum = 1};
+    ourEncounters = [];
+    let encounterNum = (Math.floor(subjectiveDuration/5));
+    console.log('encounternum = ' + encounterNum);
+    if (encounterNum < 1){encounterNum = 1};
+    console.log('encounternum = ' + encounterNum);
     let n;
     charted ? n = 20 : n = 0;
-    for (i = 0; i < encounterNum; i++){
+    while (ourEncounters.length < encounterNum){
         let warpRoll = Math.floor(Math.random()*99)+1+n;
         if (warpRoll <= 3){
             ourEncounters.push(warpTravelEncounters[0]);
         }
-        if (warpRoll <= 9){
+        else if (warpRoll <= 9){
             ourEncounters.push(warpTravelEncounters[1]);
         }
-        if (warpRoll <= 18){
+        else if (warpRoll <= 18){
             ourEncounters.push(warpTravelEncounters[2]);
         }
-        if (warpRoll <= 26){
+        else if (warpRoll <= 26){
             ourEncounters.push(warpTravelEncounters[3]);
         }
-        if (warpRoll <= 33){
+        else if (warpRoll <= 33){
             ourEncounters.push(warpTravelEncounters[4]);
         }
-        if (warpRoll <= 39){
+        else if (warpRoll <= 39){
             ourEncounters.push(warpTravelEncounters[5]);
         }
-        if (warpRoll <= 48){
+        else if (warpRoll <= 48){
             ourEncounters.push(warpTravelEncounters[6]);
         }
-        if (warpRoll <= 53){
+        else if (warpRoll <= 53){
             ourEncounters.push(warpTravelEncounters[7]);
         }
-        if (warpRoll <= 67){
+        else if (warpRoll <= 67){
             ourEncounters.push(warpTravelEncounters[8]);
         }
-        if (warpRoll <= 75){
+        else if (warpRoll <= 75){
             ourEncounters.push(warpTravelEncounters[9]);
         }
-        if (warpRoll >= 76){
+        else if (warpRoll >= 76){
             ourEncounters.push(warpTravelEncounters[10]);
         }
     }
@@ -175,31 +162,27 @@ function leaveWarp() {
     return leaveDegrees;
 };
 
-function handleDuration(e){
-    duration = e.target. // the duration button's duration - some durX
+function handleSubmit(e){
+    e.preventDefault();
+    dura1 = (Math.random() * 5) + 5;
+    dura2 = (Math.random() * 30) + 30;
+    dura3 = ((Math.random() * 100) + 100) * (Math.floor(Math.random() * 1.5) + 1);
+    let durations = [1, dura1, dura2, dura3, 'Several Years'];
+    duration = durations[e.target.id.replace('dur','')];
     navEst();
-    timeDilate();
+    timeDilation = Math.random()*24;
     chartCourse();
     steerVessel();
+    realDuration = subjectiveDuration * timeDilation;
     warpEncounters();
     leaveWarp();
-};
-
-function handleReset(e){
-    init();
+    render();
 };
 
 // Init
-
 function init(){
-    random = function randomNum(){Math.floor(Math.random())};
-    dur1 = (random * 5) + 5;
-    dur2 = (random * 30) + 30;
-    dur3 = ((random * 100) + 100) * (Math.floor(Math.random() * 1.5) + 1);
-    aware = prompt('Input Navigator Awareness Target')+10;
-    findAstro();
+    aware = parseInt(prompt('Input Navigator Awareness Target'))+10;
+    awareDegrees = aware - (Math.floor(Math.random()*99)+1);
     awareDegrees >= -30 ? astroStatus = true : astroStatus = false;
-    navSkill = prompt('Input Navigation Warp Skill Target');
-    render();
+    navSkill = parseInt(prompt('Input Navigation Warp Skill Target'));
 };
-init();
